@@ -1,25 +1,107 @@
-import logo from './logo.svg';
-import './App.css';
+//import './App.css';//no "from" keyword - Webpack syntax
+import React, { useState } from "react";
+import Todo from "./components/Todo";
+import Form from "./components/Form";
+import FilterButton from "./components/FilterButton";
+import { nanoid } from "nanoid";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const FILTER_MAP = {
+    All: () => true,
+    Active: task => !task.completed,
+    Completed: task => task.completed
 }
+const FILTER_NAMES = Object.keys(FILTER_MAP);
+//console.log(FILTER_NAMES);
+
+function App(props) {
+
+    const [tasks, setTasks] = useState(props.tasks);
+    const [filter, setFilter] = useState('All');
+
+    function addTask(name) {
+        //alert(name);
+        const newTask = { id: 'todo-' + nanoid(), name: name, completed: false };
+        setTasks([...tasks, newTask]);
+    }
+
+    function toggleTaskCompleted(id) {
+        //console.log(id);
+        const updatedTasks = tasks.map(task => {
+            //if this task has the same ID as the edited task
+            if (id === task.id) {
+                return { ...task, completed: !task.completed }
+            }
+            return task;
+        });
+        setTasks(updatedTasks);//odswiezamy obiekt stanu nowymi danymi
+    }
+
+    function deleteTask(id) {
+        //console.log(id);
+        const remainingTasks = tasks.filter(task => id !== task.id);
+        setTasks(remainingTasks);
+    }
+
+    function editTask(id, newName) {
+        const editedTaskList = tasks.map(task => {
+            if (task.id === id) {
+                return { ...task, name: newName }
+            }
+            return task;
+        });
+
+        setTasks(editedTaskList);
+    }
+
+    const taskList = tasks
+    .filter(FILTER_MAP[filter])
+    .map(task => (
+        <Todo
+            id={task.id}
+            name={task.name}
+            completed={task.completed}
+            key={task.id}//to jest potrzebne dla Reacta, bo on nie sczytuje atrybutu id
+            toggleTaskCompleted={toggleTaskCompleted}
+            deleteTask={deleteTask}
+            editTask={editTask}
+        />
+    )
+    );
+
+    const filterList = FILTER_NAMES.map(name => (
+        <FilterButton
+            key={name}
+            name={name}
+            isPressed={name === filter}
+            setFilter={setFilter}
+        />
+    ))
+
+    const taskNoun = taskList.length !== 1 ? 'tasks' : 'task';
+    const headingText = `${taskList.length} ${taskNoun} remaining`;
+
+    return (
+        <div className="todoapp stack-large">
+            <Form addTask={addTask} />
+
+            <div className="filters btn-group stack-exception">
+                {filterList}
+            </div>
+            <h2 id="list-heading">{headingText}</h2>
+            <ul
+                role="list"
+                className="todo-list stack-large stack-exception"
+                aria-labelledby="list-heading"
+            >
+                {
+                    taskList
+          /* <Todo name="Eat" completed={true} id="todo-0"/>
+          <Todo name="Sleep" completed={false} id="todo-1"/>
+          <Todo name="Repeat" completed={false} id="todo-2"/> */}
+            </ul>
+        </div>
+    );
+}
+
 
 export default App;
